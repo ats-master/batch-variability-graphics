@@ -1,0 +1,111 @@
+---
+title: "Variability of Tested Chemical and HPHC levels in JUUL aerosol for PMTA formulations at 0 Month, A Graphic Representation"
+output:
+  html_document:
+    theme: spacelab
+  pdf_document:
+    toc: yes
+  word_document:
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, results='hide'}
+library(dplyr)
+library(tidyverse)
+library(data.table)
+library(skimr)
+library(Rmisc)
+library(ggbiplot)
+library(rlang)
+library(purrr)
+library(knitr)
+library(ggpubr)
+library(broom)
+library(epitools)
+options(scipen = 999)
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, results='hide'}
+number_ticks <- function(n) {
+  function(limits) {
+    pretty(limits, n)
+  }
+} 
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, results='hide'}
+system.time(MV_v1_PMTA_T0 <- read.csv("PMTA_MV_T0_v1.csv", header = TRUE, colClasses = c("character","character","character","character","character","character","character","character","character","character","character","character","character","character","character","character","character","character","character","character","character","character","character","character","character","character","character","character", "character","character","character","numeric","character","numeric","numeric","character","numeric","numeric")))
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, results='hide'}
+as.matrix(MV_v1_PMTA_T0)
+```
+
+```{r message=FALSE, warning=FALSE}
+analyte_plot <- function(df_i,analyte_i,regime_i) {
+  
+  df_i %>%
+    filter(Analyte_Name==!! analyte_i & Puffing_Regime==!! regime_i) %>%
+    ggplot(aes(y= Unformatted_Result, x=Test_Article_ID, color=Puff_Collections)) +
+      geom_boxplot(alpha=1)+ 
+        scale_colour_brewer(palette = "Set1")+
+        labs(
+        y = "mass analyte/50 puff collection",
+        x = "Sample Batch")+
+        ggtitle(paste0("Aerosol ",analyte_i," Level, 0 Month, ", regime_i, " Puffing Regime"))+
+        theme(plot.title = element_text(size = 12, face = "bold"),
+          axis.text = element_text(size = 6),
+          axis.title = element_text(size = 10))+
+        scale_y_continuous(breaks=number_ticks(10))+
+        theme(legend.position = "right",
+          axis.text.x = element_text(angle = 30, hjust=1))+
+        facet_wrap(~Formulation_Name, scales = "free")
+}
+```
+
+
+```{r message=FALSE, warning=FALSE, results='hide'}
+#e,g. analyte_plot(MV_v1_PMTA_T0, 'Nicotine','55/3/30')
+```
+
+
+```{r message=FALSE, warning=FALSE}
+unique_analytes <- as.vector(unique(MV_v1_PMTA_T0$Analyte_Name))
+unique_analytes_plot <- unique_analytes[! unique_analytes %in% c("Impinger Solution Volume", "Number of Impingers")]
+unique_regimes <- as.vector(unique(MV_v1_PMTA_T0$Puffing_Regime))
+unique_combquery <- expand.grid(unique_analytes_plot, unique_regimes,stringsAsFactors = FALSE)
+```
+
+```{r}
+for (i in seq_len(nrow(unique_combquery))) {
+  print(analyte_plot(MV_v1_PMTA_T0, paste0(unique_combquery[i,1]), paste0(unique_combquery[i,2])))
+}
+```
+
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+MV_v1_PMTA_T0 %>%
+  filter(Analyte_Name== "Nicotine" & Puffing_Regime == "55/3/30") %>%
+  ggplot(mapping=aes(y= Unformatted_Result, x=Test_Article_ID, color=Puff_Collections)) +
+  geom_boxplot(alpha=1)+ 
+  scale_colour_brewer(palette = "Set1")+
+  labs(title = "Aerosol Nicotine Level, Non-Intense Regime",
+       y = "mg analyte/puff collection",
+       x = "Sample Batch")+
+  theme(plot.title = element_text(size = 12, face = "bold"),
+        axis.text = element_text(size = 6),
+        axis.title = element_text(size = 10))+
+  scale_y_continuous(breaks=number_ticks(10))+
+  theme(legend.position = "right",
+        axis.text.x = element_text(angle = 30, hjust=1))+
+  facet_wrap(~Formulation_Name, scales = "free")
+```
+
+
+
